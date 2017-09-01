@@ -17,7 +17,7 @@ nv.interactiveGuideline = function() {
         ,   showGuideLine = true
         ,   svgContainer = null // Must pass the chart's svg, we'll use its mousemove event.
         ,   tooltip = nv.models.tooltip()
-        ,   isMSIE = "ActiveXObject" in window // Checkt if IE by looking for activeX.
+        ,   isMSIE =  window.ActiveXObject// Checkt if IE by looking for activeX. (excludes IE11)
     ;
 
     tooltip
@@ -40,9 +40,9 @@ nv.interactiveGuideline = function() {
             }
 
             function mouseHandler() {
-                var d3mouse = d3.mouse(this);
-                var mouseX = d3mouse[0];
-                var mouseY = d3mouse[1];
+                var mouseX = d3.event.clientX - this.getBoundingClientRect().left;
+                var mouseY = d3.event.clientY - this.getBoundingClientRect().top;
+
                 var subtractMargin = true;
                 var mouseOutAnyReason = false;
                 if (isMSIE) {

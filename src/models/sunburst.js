@@ -18,7 +18,13 @@ nv.models.sunburst = function() {
         , labelFormat = function(d){if(mode === 'count'){return d.name + ' #' + d.value}else{return d.name + ' ' + (d.value || d.size)}}
         , labelThreshold = 0.02
         , sort = function(d1, d2){return d1.name > d2.name;}
-        , key = function(d,i){return d.name;}
+        , key = function(d,i){
+            if (d.parent !== undefined) {
+                return d.name + '-' + d.parent.name + '-' + i;
+            } else {
+                return d.name;
+            }
+        }
         , groupColorByParent = true
         , duration = 500
         , dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMousemove', 'elementMouseover', 'elementMouseout', 'renderEnd');
@@ -56,6 +62,12 @@ nv.models.sunburst = function() {
         var endAngle = Math.max(0, Math.min(2 * Math.PI, x(d.x + d.dx)));
         var centerAngle = (((startAngle + endAngle) / 2) * (180 / Math.PI)) - 90;
         return centerAngle;
+    }
+
+    function computeNodePercentage(d) {
+        var startAngle = Math.max(0, Math.min(2 * Math.PI, x(d.x)));
+        var endAngle = Math.max(0, Math.min(2 * Math.PI, x(d.x + d.dx)));
+        return (endAngle - startAngle) / (2 * Math.PI);
     }
 
     function labelThresholdMatched(d) {
@@ -207,7 +219,9 @@ nv.models.sunburst = function() {
             if( !wrap[0][0] ) {
                 wrap = container.append('g')
                     .attr('class', 'nvd3 nv-wrap nv-sunburst nv-chart-' + id)
-                    .attr('transform', 'translate(' + availableWidth / 2 + ',' + availableHeight / 2 + ')');
+                    .attr('transform', 'translate(' + ((availableWidth / 2) + margin.left + margin.right) + ',' + ((availableHeight / 2) + margin.top + margin.bottom) + ')');
+            } else {
+                wrap.attr('transform', 'translate(' + ((availableWidth / 2) + margin.left + margin.right) + ',' + ((availableHeight / 2) + margin.top + margin.bottom) + ')');
             }
 
             container.on('click', function (d, i) {
@@ -247,12 +261,19 @@ nv.models.sunburst = function() {
                     }
                 })
                 .style("stroke", "#FFF")
-                .on("click", zoomClick)
+                .on("click", function(d,i){
+                    zoomClick(d);
+                    dispatch.elementClick({
+                        data: d,
+                        index: i
+                    })
+                })
                 .on('mouseover', function(d,i){
                     d3.select(this).classed('hover', true).style('opacity', 0.8);
                     dispatch.elementMouseover({
                         data: d,
-                        color: d3.select(this).style("fill")
+                        color: d3.select(this).style("fill"),
+                        percent: computeNodePercentage(d)
                     });
                 })
                 .on('mouseout', function(d,i){
